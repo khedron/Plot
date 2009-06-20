@@ -1,4 +1,4 @@
-
+from QtCore import QObject
 # Current issues:
 #   Should style attributes be passed in separately from the
 #   data parts of each object?
@@ -12,11 +12,11 @@ def float_range(start, stop, step):
 		yield x
 		x = x + step
 
-class Graph(QtCore.QObject):
+class Graph(QObject):
 
 	def dataline_to_graphline(self, line):
-		return zip(self.x_axis.dataToUnit(line.x),
-			        self.y_axis.dataToUnit(line.y))
+		return zip(self.x_axis.data_to_unit(line.x),
+			        self.y_axis.data_to_unit(line.y))
 
 	function_granularity = 0.1
 	
@@ -26,19 +26,25 @@ class Graph(QtCore.QObject):
 	trends = []
 	functions = []
 
+	x_axis = Axis()
+	y_axis = Axis()
+	def __init__(self):
+		x_axis.length = 120
+		y_axis.length = 70
+
 	def draw(self, plotter):
-		plotter.setMargins() # TODO
-		plotter.setGridHeight(self.y_axis.length)
-		plotter.setGridWidth(self.x_axis.length)
+		plotter.set_margins() # TODO
+		plotter.set_grid_height(self.y_axis.length)
+		plotter.set_grid_width(self.x_axis.length)
 
-		plotter.drawTitle(self.title.text, self.title.style)
-		plotter.drawXTitle(self.x_label.text, self.x_label.style)
-		plotter.drawYTitle(self.y_label.text, self.y_label.style)
+		plotter.draw_title(self.title.text, self.title.style)
+		plotter.draw_x_title(self.x_label.text, self.x_label.style)
+		plotter.draw_y_title(self.y_label.text, self.y_label.style)
 
-		plotter.drawGrid(self.x_axis.labels, self.y_axis.labels)
+		plotter.draw_grid(self.x_axis.labels, self.y_axis.labels)
 
 		for line in self.lines:
-			plotter.drawLine(self.dataline_to_graphline(line),	line.style)
+			plotter.draw_line(self.dataline_to_graphline(line),	line.style)
 
 		# Trend lines take a list of pairs of numbers and return functions
 		# Functions take a list of numbers and return a corresponding list
@@ -48,4 +54,4 @@ class Graph(QtCore.QObject):
 			trend_fns.append(trend.function)
 
 		for function in self.functions + trend_fns: # Includes trend lines
-			plotter.drawLine([x, function(x) for x in float_range(self.x_axis.dataStart, self.x_axis.dataEnd, self.function_granularity)], function.style)
+			plotter.draw_line([(x, function(x)) for x in float_range(self.x_axis.data_start, self.x_axis.data_end, self.function_granularity)], function.style)
