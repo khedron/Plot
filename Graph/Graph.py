@@ -1,4 +1,5 @@
 from QtCore import QObject
+from Base.Property import prop
 # Current issues:
 #   Should style attributes be passed in separately from the
 #   data parts of each object?
@@ -18,6 +19,12 @@ class Graph(QObject):
 		return zip(self.x_axis.data_to_unit(line.x),
 			        self.y_axis.data_to_unit(line.y))
 
+
+	margin_left, margin_left_changed = prop(int, "margin_left", 10)
+	margin_right, margin_right_changed = prop(int, "margin_right", 10)
+	margin_top, margin_top_changed = prop(int, "margin_top", 10)
+	margin_bottom, margin_bottom_changed = prop(int, "margin_bottom", 10)
+
 	function_granularity = 0.1
 	
 	title = x_label = y_label = None
@@ -33,7 +40,8 @@ class Graph(QObject):
 		y_axis.length = 70
 
 	def draw(self, plotter):
-		plotter.set_margins() # TODO
+		plotter.set_margins(self.margin_left, self.margin_right,
+				self.margin_top, self.margin_bottom)
 		plotter.set_grid_height(self.y_axis.length)
 		plotter.set_grid_width(self.x_axis.length)
 
@@ -53,5 +61,9 @@ class Graph(QObject):
 		for trend in self.trends:
 			trend_fns.append(trend.function)
 
+		x_vals = float_range(self.x_axis.data_start, self.x_axis.data_end,
+				self.function_granularity)
 		for function in self.functions + trend_fns: # Includes trend lines
-			plotter.draw_line([(x, function(x)) for x in float_range(self.x_axis.data_start, self.x_axis.data_end, self.function_granularity)], function.style)
+			f_vals = map(function, x_vals)
+			plotter.draw_line(zip(x_vals, f_vals), function.style)
+
