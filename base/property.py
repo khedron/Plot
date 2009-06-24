@@ -1,6 +1,28 @@
 from PyQt4.QtCore import pyqtSignal, pyqtProperty, QObject
 
-# So much duplicate code!
+def get_fget(mem, type, default):
+	def fget(self):
+		try:
+			self.__getattribute__(mem)
+		except AttributeError:
+			if default is None:
+				self.__setattr__(mem, type())
+			else:
+				self.__setattr__(mem, default)
+		return self.__getattribute__(mem)
+	return fget
+
+def get_fset(mem, type, sig):
+	def fset(self, value):
+		try:
+			if self.__getattribute__(mem) == value:
+				return
+		except AttributeError:
+			# First time, set the value
+			pass
+		self.__setattr__(mem, value)
+		self.__getattribute__(sig).emit(value)
+	return fset
 
 def prop_sig(type, name, default=None, fget=None, fset=None, doc=None):
 	sig = name + "_changed"
@@ -8,23 +30,9 @@ def prop_sig(type, name, default=None, fget=None, fset=None, doc=None):
 	if default is None:
 		default = type()
 	if fget is None:
-		def fget(self):
-			try:
-				self.__getattribute__(mem)
-			except AttributeError:
-				# First time, create the value
-				self.__setattr__(mem, default)
-			return self.__getattribute__(mem)
+		fget = get_fget(mem, type, default)
 	if fset is None:
-		def fset(self, value):
-			try:
-				if self.__getattribute__(mem) == value:
-					return
-			except AttributeError:
-				# First time, set the value
-				pass
-			self.__setattr__(mem, value)
-			self.__getattribute__(sig).emit(value)
+		fset = get_fset(mem, type, sig)
 #	def fdel(self):
 #		self.__delattr__(mem)
 	return pyqtProperty(type, fget, fset, doc=doc), pyqtSignal(type)
@@ -33,15 +41,7 @@ def prop_sig(type, name, default=None, fget=None, fset=None, doc=None):
 def ro_prop(type, name, default=None, fget=None, doc=None):
 	mem = "_" + name
 	if fget is None:
-		def fget(self):
-			try:
-				self.__getattribute__(mem)
-			except AttributeError:
-				if default is None:
-					self.__setattr__(mem, type())
-				else:
-					self.__setattr__(mem, default)
-			return self.__getattribute__(mem)
+		fget = get_fget(mem, type, default)
 	return pyqtProperty(type, fget, doc=doc)
 
 if __name__ == "__main__":

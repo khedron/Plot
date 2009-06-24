@@ -23,6 +23,12 @@ class Text(QObject):
 	style, style_changed = prop_sig(TextStyle, "style")
 	text, text_changed = prop_sig(str, "text")
 
+	def __init__(self, text = None, parent = None):
+		QObject.__init__(self, parent)
+		if text is not None:
+			self.text = text
+
+
 class Graph(QObject):
 
 	def dataline_to_graphline(self, line):
@@ -36,9 +42,9 @@ class Graph(QObject):
 
 	function_granularity = 0.1
 	
-	title = Text()
-	x_label = Text()
-	y_label = Text()
+	title = Text("Title")
+	x_label = Text("X Axis")
+	y_label = Text("Y Axis")
 
 	lines = []
 	trends = []
@@ -50,9 +56,6 @@ class Graph(QObject):
 	def __init__(self):
 		self.x_axis.length = 120
 		self.y_axis.length = 70
-		self.title.text = "Title"
-		self.x_label.text = "X Axis"
-		self.y_label.text = "Y Axis"
 
 	def draw(self, plotter):
 		plotter.set_margins(self.margin_left, self.margin_top,

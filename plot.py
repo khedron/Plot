@@ -13,6 +13,7 @@ def main1():
 	plot = Plotter()
 	graph.draw(plot)
 	view = QGraphicsView(plot.scene)
+	view.scale(3,3)
 	view.show()
 
 	sys.exit(app.exec_())
