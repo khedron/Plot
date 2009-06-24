@@ -1,7 +1,7 @@
-from QtCore import QObject
+from PyQt4.QtCore import QObject
 
 from base.property import prop_sig
-from graph.plotter import Plotter
+from plotter import Plotter
 from style.textstyle import TextStyle
 # Current issues:
 #   Should style attributes be passed in separately from the
@@ -19,7 +19,7 @@ def float_range(start, stop, step):
 class Axis():
 	pass
 
-class Text(object):
+class Text(QObject):
 	style, style_changed = prop_sig(TextStyle, "style")
 	text, text_changed = prop_sig(str, "text")
 
@@ -59,7 +59,7 @@ class Graph(QObject):
 				self.margin_right, self.margin_bottom)
 		plotter.set_grid_size(self.x_axis.length, self.y_axis.length)
 
-		plotter.draw_title(self.title.text, self.title.style)
+		plotter.draw_main_title(self.title.text, self.title.style)
 		plotter.draw_x_title(self.x_label.text, self.x_label.style)
 		plotter.draw_y_title(self.y_label.text, self.y_label.style)
 
