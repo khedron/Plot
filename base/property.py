@@ -25,6 +25,16 @@ def get_fset(mem, type, sig):
 	return fset
 
 def prop_sig(type, name, default=None, fget=None, fset=None, doc=None):
+	"""
+	Creates a pyqtProperty/pyqtSignal pair from the given name and type.
+
+	The signal is assumed to have the name of the property plus a "_changed"
+	suffix; the member variable is stored as the name of the property.
+
+	Example:
+		class cls(object):
+			length, length_changed = prop_sig(int, "length", 20)
+	"""
 	sig = name + "_changed"
 	mem = "_" + name
 	if default is None:
@@ -43,6 +53,19 @@ def ro_prop(type, name, default=None, fget=None, doc=None):
 	if fget is None:
 		fget = get_fget(mem, type, default)
 	return pyqtProperty(type, fget, doc=doc)
+
+def link(obj1, name1, obj2, name2):
+	"""
+	Links two pyqtProperty/pyqtSignal pairs together.
+
+	Note that each object's setter must not emit the changed signal
+	when set to its current value, or link() will cause infinite recursion.
+	"""
+	# Connect each other's change signals
+	obj1.__getattr__(name1 + "_changed").connect(lambda x: obj2.__setattr__(name2, x))
+	obj2.__getattr__(name2 + "_changed").connect(lambda x: obj1.__setattr__(name1, x))
+	# Give both the value of the first
+	obj2.__setattr__(name2, obj1.__getattr__(name1))
 
 if __name__ == "__main__":
 	class abject(QObject):
