@@ -68,14 +68,14 @@ class Plotter(object):
 				-self.r_margin, -self.height,
 				QColor(0,255,255,255), QColor(0,255,255,128))
 
-	def draw_main_title(self, text, style):
+	def set_main_title(self, text, style):
 		text_item, w, h = self._get_text(text, style)
 
 		# Sigh... have to align text manually.
 		text_item.setPos(self.width/2 - w/2, self.t_margin/2 + h/2)
 		text_item.setTextWidth(self.width * 2/3)
 
-	def draw_x_title(self, text, style):
+	def set_x_title(self, text, style):
 		text_item, w, h = self._get_text(text, style)
 
 		# Place in middle of bottom margin, at centre of the grid.
@@ -83,7 +83,7 @@ class Plotter(object):
 				self.height - self.b_margin/2 + h/2)
 		text_item.setTextWidth(self.grid_w)
 
-	def draw_y_title(self, text, style):
+	def set_y_title(self, text, style):
 		text_item, w, h = self._get_text(text, style)
 
 		# Place in middle of left margin, at centre of the grid

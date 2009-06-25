@@ -62,9 +62,9 @@ class Graph(QObject):
 				self.margin_right, self.margin_bottom)
 		plotter.set_grid_size(self.x_axis.length, self.y_axis.length)
 
-		plotter.draw_main_title(self.title.text, self.title.style)
-		plotter.draw_x_title(self.x_label.text, self.x_label.style)
-		plotter.draw_y_title(self.y_label.text, self.y_label.style)
+		plotter.set_main_title(self.title.text, self.title.style)
+		plotter.set_x_title(self.x_label.text, self.x_label.style)
+		plotter.set_y_title(self.y_label.text, self.y_label.style)
 
 #		plotter.draw_grid(self.x_axis.labels, self.y_axis.labels)
 #
