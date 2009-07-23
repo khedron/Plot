@@ -24,7 +24,7 @@ def get_fset(mem, type, sig):
 		self.__getattribute__(sig).emit(value)
 	return fset
 
-def prop_sig(type, name, default=None, fget=None, fset=None, doc=None):
+def prop_sig(type, name, default=None, doc=None):
 	"""
 	Creates a pyqtProperty/pyqtSignal pair from the given name and type.
 
@@ -39,10 +39,13 @@ def prop_sig(type, name, default=None, fget=None, fset=None, doc=None):
 	mem = "_" + name
 	if default is None:
 		default = type()
-	if fget is None:
-		fget = get_fget(mem, type, default)
-	if fset is None:
-		fset = get_fset(mem, type, sig)
+	fget = get_fget(mem, type, default)
+	fset = get_fset(mem, type, sig)
+# These make no sense as parameters
+#	if fget is None:
+#		fget = get_fget(mem, type, default)
+#	if fset is None:
+#		fset = get_fset(mem, type, sig)
 #	def fdel(self):
 #		self.__delattr__(mem)
 	return pyqtProperty(type, fget, fset, doc=doc), pyqtSignal(type)
