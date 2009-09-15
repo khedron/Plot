@@ -1,4 +1,4 @@
-import pdb
+#import pdb
 #pdb.set_trace()
 from PyQt4.QtGui import QApplication, QGraphicsScene, QGraphicsTextItem, QGraphicsView
 from PyQt4.QtCore import QPointF

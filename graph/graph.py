@@ -1,6 +1,6 @@
 from PyQt4.QtCore import QObject
 
-from base.property import prop_sig
+from base.property import prop_sig, link
 from plotter import Plotter
 from style.textstyle import TextStyle
 # Current issues:
@@ -49,9 +49,19 @@ class Graph(QObject):
 		self.x_axis.length = 120
 		self.y_axis.length = 70
 
+		self.plotter = Plotter()
+
 		self.title = Text("Title")
 		self.x_label = Text("X Axis")
 		self.y_label = Text("Y Axis")
+
+		for mine, yours in [(self.title, self.plotter.main_title),
+												(self.x_label, self.plotter.x_title),
+												(self.y_label, self.plotter.y_title)]:
+			yours.text = mine.text
+			yours.style = mine.style
+			link(mine, "text", yours, "text")
+			link(mine, "style", yours, "style")
 
 		self.lines = []
 		self.trends = []

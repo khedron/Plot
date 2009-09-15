@@ -59,10 +59,11 @@ def ro_prop(type, name, default=None, fget=None, doc=None):
 	return pyqtProperty(type, fget, doc=doc)
 
 def get_property_value(obj, prop_name):
-	type(obj).__dict__[prop_name].__get__(obj, type(obj))
+	return type(obj).__dict__[prop_name].__get__(obj, type(obj))
 
 def set_property_value(obj, prop_name, value):
 	type(obj).__dict__[prop_name].__set__(obj, value)
+	return None
 
 def link(obj1, name1, obj2, name2):
 	"""
