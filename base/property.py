@@ -5,10 +5,9 @@ def get_fget(mem, type, default):
 		try:
 			self.__getattribute__(mem)
 		except AttributeError:
-			if default is None:
-				self.__setattr__(mem, type())
-			else:
-				self.__setattr__(mem, default)
+#			Need to have the behaviour that an unset default gives
+#			no default value => don't special-case default==None.
+			self.__setattr__(mem, default)
 		return self.__getattribute__(mem)
 	return fget
 
@@ -20,8 +19,11 @@ def get_fset(mem, type, sig):
 		except AttributeError:
 			# First time, set the value
 			pass
+		# delete() equivalent here if needed
+		# Filter value through new() here if needed
 		self.__setattr__(mem, value)
-		self.__getattribute__(sig).emit(value)
+		# Emit the filtered value, not the given value
+		self.__getattribute__(sig).emit(self.__getattribute__(mem))
 	return fset
 
 def prop_sig(type, name, default=None, doc=None):
@@ -34,20 +36,19 @@ def prop_sig(type, name, default=None, doc=None):
 	Example:
 		class cls(object):
 			length, length_changed = prop_sig(int, "length", 20)
+	
+	The new method should take one argument, the object that is assigned
+	to the property. It acts as a filter before the assigned object is
+	actually set.
+
+	The delete method should take one argument, the object that is
+	to be deleted. It will be called on the property value when it is
+	about to be replaced by another value.
 	"""
 	sig = name + "_changed"
 	mem = "_" + name
-	if default is None:
-		default = type()
 	fget = get_fget(mem, type, default)
 	fset = get_fset(mem, type, sig)
-# These make no sense as parameters
-#	if fget is None:
-#		fget = get_fget(mem, type, default)
-#	if fset is None:
-#		fset = get_fset(mem, type, sig)
-#	def fdel(self):
-#		self.__delattr__(mem)
 	return pyqtProperty(type, fget, fset, doc=doc), pyqtSignal(type)
 
 
@@ -57,6 +58,12 @@ def ro_prop(type, name, default=None, fget=None, doc=None):
 		fget = get_fget(mem, type, default)
 	return pyqtProperty(type, fget, doc=doc)
 
+def get_property_value(obj, prop_name):
+	type(obj).__dict__[prop_name].__get__(obj, type(obj))
+
+def set_property_value(obj, prop_name, value):
+	type(obj).__dict__[prop_name].__set__(obj, value)
+
 def link(obj1, name1, obj2, name2):
 	"""
 	Links two pyqtProperty/pyqtSignal pairs together.
@@ -65,10 +72,10 @@ def link(obj1, name1, obj2, name2):
 	when set to its current value, or link() will cause infinite recursion.
 	"""
 	# Connect each other's change signals
-	obj1.__getattr__(name1 + "_changed").connect(lambda x: obj2.__setattr__(name2, x))
-	obj2.__getattr__(name2 + "_changed").connect(lambda x: obj1.__setattr__(name1, x))
+	obj1.__getattribute__(name1 + "_changed").connect(lambda x: set_property_value(obj2, name2, x))
+	obj2.__getattribute__(name2 + "_changed").connect(lambda x: set_property_value(obj1, name1, x))
 	# Give both the value of the first
-	obj2.__setattr__(name2, obj1.__getattr__(name1))
+	set_property_value(obj2, name2, get_property_value(obj1, name1))
 
 if __name__ == "__main__":
 	class abject(QObject):

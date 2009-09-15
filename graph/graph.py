@@ -29,6 +29,7 @@ class Text(QObject):
 			self.text = text
 
 
+# TODO: link Plotter properties to Graph properties as need be.
 class Graph(QObject):
 
 	def dataline_to_graphline(self, line):
@@ -42,29 +43,33 @@ class Graph(QObject):
 
 	function_granularity = 0.1
 	
-	title = Text("Title")
-	x_label = Text("X Axis")
-	y_label = Text("Y Axis")
-
-	lines = []
-	trends = []
-	functions = []
-
-	x_axis = Axis()
-	y_axis = Axis()
-
 	def __init__(self):
+		self.x_axis = Axis()
+		self.y_axis = Axis()
 		self.x_axis.length = 120
 		self.y_axis.length = 70
+
+		self.title = Text("Title")
+		self.x_label = Text("X Axis")
+		self.y_label = Text("Y Axis")
+
+		self.lines = []
+		self.trends = []
+		self.functions = []
+
 
 	def draw(self, plotter):
 		plotter.set_margins(self.margin_left, self.margin_top,
 				self.margin_right, self.margin_bottom)
 		plotter.set_grid_size(self.x_axis.length, self.y_axis.length)
 
-		plotter.set_main_title(self.title.text, self.title.style)
-		plotter.set_x_title(self.x_label.text, self.x_label.style)
-		plotter.set_y_title(self.y_label.text, self.y_label.style)
+		for text, plotter_text in [(self.title, plotter.main_title),
+				(self.x_label, plotter.x_title), (self.y_label, plotter.y_title)]:
+			plotter_text.text = text.text
+			plotter_text.style = text.style
+#		plotter.set_main_title(self.title.text, self.title.style)
+#		plotter.set_x_title(self.x_label.text, self.x_label.style)
+#		plotter.set_y_title(self.y_label.text, self.y_label.style)
 
 #		plotter.draw_grid(self.x_axis.labels, self.y_axis.labels)
 #
