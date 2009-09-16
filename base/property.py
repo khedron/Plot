@@ -7,7 +7,10 @@ def get_fget(mem, type, default):
 		except AttributeError:
 #			Need to have the behaviour that an unset default gives
 #			no default value => don't special-case default==None.
-			self.__setattr__(mem, default)
+                        if default is None:
+                                self.__setattr__(mem, type())
+                        else:
+                                self.__setattr__(mem, default)
 		return self.__getattribute__(mem)
 	return fget
 

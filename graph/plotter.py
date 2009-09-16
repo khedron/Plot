@@ -1,7 +1,7 @@
 # Proper division, even for integers
 from __future__ import division
 
-from PyQt4.QtGui import QGraphicsScene, QGraphicsTextItem, QTextCursor, QColor, QTransform
+from PyQt4.QtGui import QGraphicsScene, QGraphicsTextItem, QTextCursor, QColor, QPen, QTransform
 from PyQt4.QtCore import Qt, QObject, pyqtSignal, QString
 
 from style.textstyle import TextStyle
@@ -79,8 +79,12 @@ class TextItem(QObject):
 	style, style_changed = prop_sig(TextStyle, "style", None)
 
 	def __init__(self, scene, dimensions, transform_fn):
-		"""
-		transform_fn(dimensions): returns a QTransform
+		"""\
+		transform_fn(dimensions, w, h): returns a QTransform
+
+                * dimensions: plotter dimension object
+                * w: text width in pixels
+                * h: text height in pixels
 		"""
 		QObject.__init__(self)
 		self.scene = scene
@@ -92,51 +96,56 @@ class TextItem(QObject):
 
 	def update(self):
 		# Delete previous text item
-		if self.text_item is not None:
+		if self.text_item != None:
 			self.scene.removeItem(self.text_item)
 			self.text_item.deleteLater()
 
 		# Exit if any parameters unset
-		if self.text is None or self.style is None:
-			return
+		if self.text == None or self.style == None:
+			#return
+                        pass
 
-		self.text_item = self.get_text_item(self.text, self.style)
-		self.text_item.setTransform(self.transform(self.dimensions))
+		self.text_item, w, h = self.get_text_item(self.text, self.style)
+		self.text_item.setTransform(self.transform(self.dimensions, w, h))
 		self.scene.addItem(self.text_item)
 
-	def get_text_item(text, style):
+	def get_text_item(self, text, style):
 		text_item = QGraphicsTextItem(text, None)
 		text_item.setDefaultTextColor(style.colour)
 		text_item.setFont(style.font)
-		w = text_item.textWidth()
-		if style.font.pixelSize() != -1:
-			# -1 means invalid; use point size
-			h = style.font.pixelSize()  
-		else:
-			# Approximate conversion; a point is 1/72"; pixels these
-			# days are 1/96"
-			h = style.font.pointSize() * 96/72
+		text_item.setPos(0,0)
+		size = text_item.document().size()
+		w = size.width()
+		h = size.height()
+		#w = text_item.textWidth()
+		#if style.font.pixelSize() != -1:
+		#	# -1 means invalid; use point size
+		#	h = style.font.pixelSize()  
+		#else:
+		#	# Approximate conversion; a point is 1/72"; pixels these
+		#	# days are 1/96"
+		#	h = style.font.pointSize() * 96/72
 		return text_item, w, h
 
-def main_title_transform(dimensions):
+def main_title_transform(dimensions, w, h):
 	# Place in middle of top margin, at centre of whole graph
 	# or should I centre it on the grid?
-	return QTransform().translate(
+	return QTransform().translate(#-w/2, -h/2).translate(
 			dimensions.width/2, dimensions.top_margin/2)
 
-def x_title_transform(dimensions):
+def x_title_transform(dimensions, w, h):
 	# Place in middle of bottom margin, at centre of the grid.
-	return QTransform().translate(
+	return QTransform().translate(#-w/2, -h/2).translate(
 			dimensions.left_margin + dimensions.grid_width/2,
 			dimensions.height - dimensions.bottom_margin/2)
 
-def y_title_transform(dimensions):
+def y_title_transform(dimensions, w, h):
 	# Place in middle of left margin, at centre of the grid
 	# and rotated 90 degrees anticlockwise
-	return QTransform().translate(
-			dimensions.left_margin/2,
-			dimensions.top_margin + dimensions.grid_height/2
-			)#.rotate(270)
+	return QTransform().translate(-w/2, -h/2)#.translate(
+			#dimensions.left_margin/2,
+			#dimensions.top_margin + dimensions.grid_height/2
+			#).rotate(270)
 
 class Plotter(QObject):
 	px_per_unit = 7
@@ -161,6 +170,14 @@ class Plotter(QObject):
 		self.scene.addRect(self.dimensions.width, self.dimensions.height,
 				-self.dimensions.right_margin, -self.dimensions.height,
 				QColor(0,255,255,255), QColor(0,255,255,128))
+		halfway_height = self.dimensions.top_margin + self.dimensions.grid_height/2
+		self.scene.addLine(0, halfway_height,
+                                   self.dimensions.width, halfway_height,
+                                   QPen(QColor(0,255,0,0), 100))
+		halfway_width = self.dimensions.left_margin + self.dimensions.grid_width/2
+		self.scene.addLine(halfway_width, 0,
+                                   halfway_width, self.dimensions.height,
+                                   QPen(QColor(0,0,255,0), 20))
 
 		self.main_title.text_changed.connect(self.doit)
 		self.main_title.style_changed.connect(self.doit)

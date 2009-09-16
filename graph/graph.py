@@ -56,8 +56,8 @@ class Graph(QObject):
 		self.y_label = Text("Y Axis")
 
 		for mine, yours in [(self.title, self.plotter.main_title),
-												(self.x_label, self.plotter.x_title),
-												(self.y_label, self.plotter.y_title)]:
+                                    (self.x_label, self.plotter.x_title),
+		                    (self.y_label, self.plotter.y_title)]:
 			yours.text = mine.text
 			yours.style = mine.style
 			link(mine, "text", yours, "text")
