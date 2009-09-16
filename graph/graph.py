@@ -36,10 +36,10 @@ class Graph(QObject):
 		return zip(self.x_axis.data_to_unit(line.x),
 			        self.y_axis.data_to_unit(line.y))
 
-	margin_left, margin_left_changed = prop_sig(float, "margin_left", 10)
-	margin_top, margin_top_changed = prop_sig(float, "margin_top", 10)
-	margin_right, margin_right_changed = prop_sig(float, "margin_right", 10)
-	margin_bottom, margin_bottom_changed = prop_sig(float, "margin_bottom", 10)
+	margin_left, margin_left_changed = prop_sig(float, "margin_left", 20)
+	margin_top, margin_top_changed = prop_sig(float, "margin_top", 20)
+	margin_right, margin_right_changed = prop_sig(float, "margin_right", 20)
+	margin_bottom, margin_bottom_changed = prop_sig(float, "margin_bottom", 20)
 
 	function_granularity = 0.1
 	
