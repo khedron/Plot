@@ -1,7 +1,7 @@
 from PyQt4.QtCore import QObject, pyqtSignal
 
 from base.property import prop_sig
-from style.textstyle import TextStyle
+from style.style import TextStyle
 
 class Text(QObject):
 	changed = pyqtSignal()
