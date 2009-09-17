@@ -28,41 +28,10 @@ yellow_t  = QColor(255,255,0,128)
 black     = QColor(0,0,0,255)
 black_t   = QColor(0,0,0,128)
 
-# TODO: setting defaults for Dimensions helps simplify the GraphicsItem code
-# as we don't have to check whether the dimensions have been set yet before
-# accessing them.
-#
-# However, this causes duplication of default values in Graph and Plotter.
-# The properties should be linked anyhow.
-class Dimensions(QObject):
-	changed = pyqtSignal()
-
-	left_margin, left_margin_changed = prop_sig(float, "left_margin", 20)
-	top_margin, top_margin_changed = prop_sig(float, "top_margin", 20)
-	right_margin, right_margin_changed = prop_sig(float, "right_margin", 20)
-	bottom_margin, bottom_margin_changed = prop_sig(float, "bottom_margin", 20)
-
-	grid_width, grid_width_changed = prop_sig(float, "grid_width", 120)
-	grid_height, grid_height_changed = prop_sig(float, "grid_height", 70)
-
-	# @property syntax seems to cloud the code; not using it
-	width = property(lambda self: self.left_margin + self.grid_width + self.right_margin)
-	height = property(lambda self: self.top_margin + self.grid_height + self.bottom_margin)
-
-	def __init__(self):
-		QObject.__init__(self)
-		# Connect all signals to changed() signal
-		for signal in [ self.left_margin_changed, self.top_margin_changed,
-				self.right_margin_changed, self.bottom_margin_changed,
-				self.grid_width_changed, self.grid_height_changed ]:
-			signal.connect(self.changed)
-
 # DEBUG - remove rects
 class TextItem(QObject):
-	text, text_changed = prop_sig(QString, "text", None)
-	style, style_changed = prop_sig(TextStyle, "style", None)
 
-	def __init__(self, scene, dimensions, transform_fn):
+	def __init__(self, text, scene, dimensions, transform_fn):
 		"""\
 		transform_fn(dimensions, w, h): returns a QTransform
 
@@ -71,13 +40,18 @@ class TextItem(QObject):
 		 * h: text height in pixels
 		"""
 		QObject.__init__(self)
+
+		self.text = text
 		self.scene = scene
 		self.dimensions = dimensions
 		self.transform = transform_fn
+
 		self.text_item = None
 		self.rect = None
-		for signal in [self.text_changed, self.style_changed, dimensions.changed]:
+		for signal in text.changed, dimensions.changed:
 			signal.connect(self.update)
+
+		self.update()
 
 	def update(self):
 		# Delete previous text item
@@ -88,10 +62,13 @@ class TextItem(QObject):
 			self.scene.removeItem(self.rect)
 
 		# Exit if any parameters unset
-		if self.text == None or self.style == None:
+		if self.text.text == None or self.text.style == None:
 			return
 
-		self.text_item, w, h = self.get_text_item(self.text, self.style)
+		self.text_item = self.get_text_item()
+		size = self.text_item.boundingRect()
+		w = size.width()
+		h = size.height()
 		transform = self.transform(self.dimensions, w, h)
 		self.text_item.setTransform(transform)
 		self.scene.addItem(self.text_item)
@@ -100,16 +77,13 @@ class TextItem(QObject):
 		self.rect.setTransform(transform)
 		self.scene.addItem(self.rect)
 
-	def get_text_item(self, text, style):
-		text_item = QGraphicsTextItem(text, None)
-		text_item.setDefaultTextColor(style.colour) # QGraphicsTextItem
-		#text_item.setPen(style.colour) # QGraphicsSimpleTextItem
-		text_item.setFont(style.font)
+	def get_text_item(self):
+		text_item = QGraphicsTextItem(self.text.text, None)
+		text_item.setDefaultTextColor(self.text.style.colour) # QGraphicsTextItem
+		#text_item.setPen(self.text.style.colour) # QGraphicsSimpleTextItem
+		text_item.setFont(self.text.style.font)
 		text_item.setPos(0,0)
-		size = text_item.boundingRect()
-		w = size.width()
-		h = size.height()
-		return text_item, w, h
+		return text_item
 
 def main_title_transform(dimensions, w, h):
 	# Place in middle of top margin, at centre of whole graph
@@ -137,15 +111,15 @@ def y_title_transform(dimensions, w, h):
 class Plotter(QObject):
 	px_per_unit = 7
 
-	def __init__(self):
+	def __init__(self, dimensions, main_title, x_title, y_title):
 		QObject.__init__(self)
 
-		self.dimensions = Dimensions()
+		self.dimensions = dimensions
 		self.scene = QGraphicsScene()
 
-		self.main_title = TextItem(self.scene, self.dimensions, main_title_transform)
-		self.x_title = TextItem(self.scene, self.dimensions, x_title_transform)
-		self.y_title = TextItem(self.scene, self.dimensions, y_title_transform)
+		self.main_title = TextItem(main_title, self.scene, self.dimensions, main_title_transform)
+		self.x_title = TextItem(x_title, self.scene, self.dimensions, x_title_transform)
+		self.y_title = TextItem(y_title, self.scene, self.dimensions, y_title_transform)
 
 		# DEBUG - remove rects & lines, make them move as dimensions change
 		self.scene.addRect(0,0, self.dimensions.left_margin, self.dimensions.height,

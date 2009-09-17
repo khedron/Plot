@@ -10,9 +10,7 @@ def main1():
 	import sys
 	app = QApplication(sys.argv)
 	graph = Graph()
-	plot = Plotter()
-	graph.draw(plot)
-	view = QGraphicsView(plot.scene)
+	view = QGraphicsView(graph.plotter.scene)
 	view.scale(3,3)
 	view.show()
 

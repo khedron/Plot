@@ -2,7 +2,9 @@ from PyQt4.QtCore import QObject
 
 from base.property import prop_sig, link
 from plotter import Plotter
-from style.textstyle import TextStyle
+from dimensions import Dimensions
+from base.text import Text
+
 # Current issues:
 #   Should style attributes be passed in separately from the
 #   data parts of each object?
@@ -19,67 +21,48 @@ def float_range(start, stop, step):
 class Axis():
 	pass
 
-class Text(QObject):
-	style, style_changed = prop_sig(TextStyle, "style")
-	text, text_changed = prop_sig(str, "text")
-
-	def __init__(self, text = None, parent = None):
-		QObject.__init__(self, parent)
-		if text is not None:
-			self.text = text
-
-
 # TODO: link Plotter properties to Graph properties as need be.
 class Graph(QObject):
 
-	def dataline_to_graphline(self, line):
-		return zip(self.x_axis.data_to_unit(line.x),
-			        self.y_axis.data_to_unit(line.y))
-
-	margin_left, margin_left_changed = prop_sig(float, "margin_left", 20)
-	margin_top, margin_top_changed = prop_sig(float, "margin_top", 20)
-	margin_right, margin_right_changed = prop_sig(float, "margin_right", 20)
-	margin_bottom, margin_bottom_changed = prop_sig(float, "margin_bottom", 20)
-
-	function_granularity = 0.1
-	
 	def __init__(self):
+		QObject.__init__(self)
+
+		self.main_title = Text("Title")
+		self.x_title = Text("X Axis")
+		self.y_title = Text("Y Axis")
+
+		self.dimensions = Dimensions()
+		self.plotter = Plotter(dimensions=self.dimensions, main_title=self.main_title,
+				x_title=self.x_title, y_title=self.y_title,)
+
 		self.x_axis = Axis()
 		self.y_axis = Axis()
 		self.x_axis.length = 120
 		self.y_axis.length = 70
 
-		self.plotter = Plotter()
-
-		self.title = Text("Title")
-		self.x_label = Text("X Axis")
-		self.y_label = Text("Y Axis")
-
-		for mine, yours in [(self.title, self.plotter.main_title),
-                                    (self.x_label, self.plotter.x_title),
-		                    (self.y_label, self.plotter.y_title)]:
-			yours.text = mine.text
-			yours.style = mine.style
-			link(mine, "text", yours, "text")
-			link(mine, "style", yours, "style")
-
 		self.lines = []
 		self.trends = []
 		self.functions = []
 
+	def dataline_to_graphline(self, line):
+		return zip(self.x_axis.data_to_unit(line.x),
+			        self.y_axis.data_to_unit(line.y))
 
-	def draw(self, plotter):
-		plotter.set_margins(self.margin_left, self.margin_top,
-				self.margin_right, self.margin_bottom)
-		plotter.set_grid_size(self.x_axis.length, self.y_axis.length)
+	function_granularity = 0.1
 
-		for text, plotter_text in [(self.title, plotter.main_title),
-				(self.x_label, plotter.x_title), (self.y_label, plotter.y_title)]:
-			plotter_text.text = text.text
-			plotter_text.style = text.style
-#		plotter.set_main_title(self.title.text, self.title.style)
-#		plotter.set_x_title(self.x_label.text, self.x_label.style)
-#		plotter.set_y_title(self.y_label.text, self.y_label.style)
+
+#	def draw(self, plotter):
+#		plotter.set_margins(self.margin_left, self.margin_top,
+#				self.margin_right, self.margin_bottom)
+#		plotter.set_grid_size(self.x_axis.length, self.y_axis.length)
+#
+#		for text, plotter_text in [(self.main_title, plotter.main_title),
+#				(self.x_title, plotter.x_title), (self.y_title, plotter.y_title)]:
+#			plotter_text.text = text.text
+#			plotter_text.style = text.style
+#		plotter.set_main_title(self.main_title.text, self.main_title.style)
+#		plotter.set_x_title(self.x_title.text, self.x_title.style)
+#		plotter.set_y_title(self.y_title.text, self.y_title.style)
 
 #		plotter.draw_grid(self.x_axis.labels, self.y_axis.labels)
 #
