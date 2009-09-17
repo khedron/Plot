@@ -3,8 +3,15 @@
 from PyQt4.QtGui import QApplication, QGraphicsScene, QGraphicsTextItem, QGraphicsView
 from PyQt4.QtCore import QPointF
 
+from PyQt4.QtCore import Qt
+
+import config
+
 from graph.plotter import Plotter
 from graph.graph import Graph
+
+config.debug.plotter.show_margin_boxes = True
+config.debug.plotter.show_text_boxes = True
 
 def main1():
 	import sys

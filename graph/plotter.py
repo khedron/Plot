@@ -5,6 +5,7 @@ from PyQt4.QtGui import QGraphicsScene, QGraphicsTextItem, QGraphicsSimpleTextIt
 from PyQt4.QtCore import Qt, QObject, pyqtSignal, QString
 
 from base.property import ro_prop, prop_sig
+import config
 
 # Text objects:
 # parameters: scene, text, style, scene & grid dimensions
@@ -74,7 +75,8 @@ class TextItem(QObject):
 
 		self.rect = QGraphicsRectItem(0,0, w,h)
 		self.rect.setTransform(transform)
-		self.scene.addItem(self.rect)
+		if config.debug.plotter.show_text_boxes:
+			self.scene.addItem(self.rect)
 
 	def get_text_item(self):
 		text_item = QGraphicsTextItem(self.text.text, None)
@@ -120,62 +122,34 @@ class Plotter(QObject):
 		self.x_title = TextItem(x_title, self.scene, self.dimensions, x_title_transform)
 		self.y_title = TextItem(y_title, self.scene, self.dimensions, y_title_transform)
 
-		# DEBUG - remove rects & lines, make them move as dimensions change
-		self.scene.addRect(0,0, self.dimensions.left_margin, self.dimensions.height,
-				red, red_t)
-		self.scene.addRect(0,0, self.dimensions.width, self.dimensions.top_margin,
-				green, green_t)
-		self.scene.addRect(0, self.dimensions.top_margin + self.dimensions.grid_height,
+		if config.debug.plotter.show_margin_boxes:
+			self.debug_margin_boxes = []
+			dimensions.changed.connect(self.show_margin_boxes)
+			self.show_margin_boxes()
+
+	def show_margin_boxes(self):
+		for rect in self.debug_margin_boxes:
+			self.scene.removeItem(rect)
+		r = []
+		r.append(self.scene.addRect(0,0, self.dimensions.left_margin, self.dimensions.height,
+				red, red_t))
+		r.append(self.scene.addRect(0,0, self.dimensions.width, self.dimensions.top_margin,
+				green, green_t))
+		r.append(self.scene.addRect(0, self.dimensions.top_margin + self.dimensions.grid_height,
 				self.dimensions.width, self.dimensions.bottom_margin,
-				blue, blue_t)
-		self.scene.addRect(self.dimensions.width, self.dimensions.height,
+				blue, blue_t))
+		r.append(self.scene.addRect(self.dimensions.width, self.dimensions.height,
 				-self.dimensions.right_margin, -self.dimensions.height,
-				cyan, cyan_t)
+				cyan, cyan_t))
 		halfway_height = self.dimensions.top_margin + self.dimensions.grid_height/2
-		self.scene.addLine(0, halfway_height,
+		r.append(self.scene.addLine(0, halfway_height,
 				self.dimensions.width, halfway_height,
-				QPen(black, 0))
+				QPen(black, 0)))
 		halfway_width = self.dimensions.left_margin + self.dimensions.grid_width/2
-		self.scene.addLine(halfway_width, 0,
+		r.append(self.scene.addLine(halfway_width, 0,
 				halfway_width, self.dimensions.height,
-				QPen(black, 0))
-
-#		self.main_title.text_changed.connect(self.doit)
-#		self.main_title.style_changed.connect(self.doit)
-
-
-#	def doit():
-#		def _add_text(self, text, style):				       
-#			text_item = QGraphicsTextItem(text, None, self.scene)	   
-#			text_item.setDefaultTextColor(style.colour)		     
-#			text_item.setFont(style.font)				   
-#			w = text_item.textWidth()				       
-#			if style.font.pixelSize() != -1:				
-#				# -1 means invalid; use point size		      
-#				h = style.font.pixelSize()			      
-#			else:							   
-#				# Approximate conversion; a point is 1/72"; pixels these
-#				# days are 1/96"					
-#				h = style.font.pointSize() * 96/72		      
-#			return text_item, w, h					  
-#		a = __add_text(self, self.main_title.text, self.main_title.style)
-#		a.setPos(0,0)
-#		QMessageBox.critical(None, "Text changed", "Main title stuff changed.")
-
-
-
-	def set_px_per_unit(self, ppu):
-		self.px_per_unit = ppu
-
-	def set_margins(self, l,t,r,b):
-		self.dimensions.left_margin = l
-		self.dimensions.top_margin = t
-		self.dimensions.right_margin = r
-		self.dimensions.bottom_margin = b
-
-	def set_grid_size(self, w, h):
-		self.dimensions.grid_width = w
-		self.dimensions.grid_height = h
+				QPen(black, 0)))
+		self.debug_margin_boxes = r
 
 # == Text ==
 # QGraphicsSimpleTextItem supports colour (setPen) and font (setFont).
