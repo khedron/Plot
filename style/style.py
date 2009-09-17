@@ -18,3 +18,21 @@ class TextStyle(QObject):
 		for signal in self.font_changed, self.colour_changed:
 			signal.connect(self.changed)
 
+class LineStyle(QObject):
+	changed = pyqtSignal()
+
+	stroke_colour, stroke_colour_changed = prop_sig(QColor, "stroke_colour", Qt.black)
+	# 0 width in a QGraphicsScene indicates a
+	# cosmetic line that will always be visible
+	stroke_width, stroke_width_changed = prop_sig(int, "stroke_width", 0)
+
+	# Outline colour
+	pen = pyqtProperty(QPen, lambda self: QPen(QBrush(self.stroke_colour),self.stroke_width))
+	# Fill colour
+	brush = pyqtProperty(QBrush, lambda self: QBrush(Qt.transparent))
+
+	def __init__(self):
+		QObject.__init__(self)
+		for signal in self.stroke_colour_changed, self.stroke_width_changed:
+			signal.connect(self.changed)
+
