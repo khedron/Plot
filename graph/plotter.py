@@ -14,21 +14,20 @@ import config
 # dimensions: another update method
 
 red       = QColor(255,0,0,255)
-red_t     = QColor(255,0,0,128)
+red_t     = QColor(255,0,0,127)
 green     = QColor(0,255,0,255)
-green_t   = QColor(0,255,0,128)
+green_t   = QColor(0,255,0,127)
 blue      = QColor(0,0,255,255)
-blue_t    = QColor(0,0,255,128)
+blue_t    = QColor(0,0,255,127)
 cyan      = QColor(0,255,255,255)
-cyan_t    = QColor(0,255,255,128)
+cyan_t    = QColor(0,255,255,127)
 magenta   = QColor(255,0,255,255)
-magenta_t = QColor(255,0,255,128)
+magenta_t = QColor(255,0,255,127)
 yellow    = QColor(255,255,0,255)
-yellow_t  = QColor(255,255,0,128)
+yellow_t  = QColor(255,255,0,127)
 black     = QColor(0,0,0,255)
-black_t   = QColor(0,0,0,128)
+black_t   = QColor(0,0,0,127)
 
-# DEBUG - remove rects
 class TextItem(QObject):
 
 	def __init__(self, text, scene, dimensions, transform_fn):
@@ -110,7 +109,6 @@ def y_title_transform(dimensions, w, h):
 			).rotate(270).translate(-w/2, -h/2)
 
 class Plotter(QObject):
-	px_per_unit = 7
 
 	def __init__(self, dimensions, main_title, x_title, y_title):
 		QObject.__init__(self)
