@@ -1,0 +1,19 @@
+Use:
+TableWidget
+TableWidgetItem
+	- modify demos/spreadsheet/spreadsheetitem.cpp
+ItemDelegate
+	- modify demos/spreadsheet/spreadsheetdelegate.cpp
+	- use TableWidget::setDelegateForColumn()
+
+==
+
+TableWidgetItem: sole purpose is to store data; doesn't inherit QWidget
+	- property QVariant data(Qt.ItemDataRole) is the main one
+	- ItemDataRoles for data (edit string, display string) and display (colours)
+	- can stuff secret data in using ItemDataRoles above Qt.UserRole
+
+ItemDelegate: customise display and editing of data
+	- reimplement createEditor() to change editing widget
+	- default creates editors for main Qt data types
+	- but may need to subclass, e.g. to create a DateTimeEditWidget with pop-up enabled.
