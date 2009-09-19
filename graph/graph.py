@@ -18,9 +18,6 @@ def float_range(start, stop, step):
 		yield x
 		x = x + step
 
-class Axis():
-	pass
-
 # TODO: link Plotter properties to Graph properties as need be.
 class Graph(QObject):
 
@@ -35,22 +32,19 @@ class Graph(QObject):
 		self.plotter = Plotter(dimensions=self.dimensions, main_title=self.main_title,
 				x_title=self.x_title, y_title=self.y_title,)
 
-		self.x_axis = Axis()
-		self.y_axis = Axis()
-		self.x_axis.length = 120
-		self.y_axis.length = 70
+		# Axis
 
 		self.lines = []
 		self.trends = []
 		self.functions = []
 
-	def dataline_to_graphline(self, line):
-		return zip(self.x_axis.data_to_unit(line.x),
-			        self.y_axis.data_to_unit(line.y))
-
-	function_granularity = 0.1
-
-
+#	def dataline_to_graphline(self, line):
+#		return zip(self.x_axis.data_to_unit(line.x),
+#			        self.y_axis.data_to_unit(line.y))
+#
+#	function_granularity = 0.1
+#
+#
 #	def draw(self, plotter):
 #		plotter.set_margins(self.margin_left, self.margin_top,
 #				self.margin_right, self.margin_bottom)
