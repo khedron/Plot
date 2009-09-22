@@ -1,10 +1,21 @@
-Use:
-TableWidget
-TableWidgetItem
-	- modify demos/spreadsheet/spreadsheetitem.cpp
-ItemDelegate
-	- modify demos/spreadsheet/spreadsheetdelegate.cpp
-	- use TableWidget::setDelegateForColumn()
+Use TableWidget
+Options:
+	1. Stick with Qt native types
+			- can't customise editing or display
+			- must use all Qt native types
+	2. Stick with Qt native types; to customise editing subclass QItemEditorCreatorBase
+		and reimplement createWidget() and valuePropertyName() then call
+		TableWidget.itemDelegate().itemEditorFactory().registerEditor(QVariant.Type, QItemEditorCreatorBase)
+			- can customise editing
+			- cannot customise display
+			- must use all Qt native types
+	3. Subclass QTableWidgetItem and QItemDelegate
+			- can customise editing
+			- can't customise display
+			- can use arbitrary types
+			- example already exists in demos/spreadsheet
+	4. Use alternate types (Python native?)
+			- Too complicated, as we have to handle painting, resizing and editing.
 
 ==
 
@@ -17,3 +28,7 @@ ItemDelegate: customise display and editing of data
 	- reimplement createEditor() to change editing widget
 	- default creates editors for main Qt data types
 	- but may need to subclass, e.g. to create a DateTimeEditWidget with pop-up enabled.
+
+Relevant examples:
+demos/spreadsheet
+examples/itemviews/coloreditorfactory
