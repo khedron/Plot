@@ -19,7 +19,7 @@ config.debug.plotter.show_text_boxes = True
 
 app = QApplication(sys.argv)
 
-def main1():
+def main():
 	graph = Graph()
 	view = QGraphicsView(graph.plotter.scene)
 	view.scale(3,3)
@@ -27,7 +27,7 @@ def main1():
 
 	sys.exit(app.exec_())
 
-def main2():
+def qt_test():
 	"""
 	Test that Qt actually works
 	"""
@@ -40,20 +40,18 @@ def main2():
 	sys.exit(app.exec_())
 
 
-from PyQt4.QtGui import QTableWidget, QTableWidgetItem, QItemEditorCreatorBase, QDateTimeEdit, QItemEditorFactory
+from PyQt4.QtGui import QTableWidget, QTableWidgetItem, QItemEditorCreatorBase, QDateTimeEdit, QItemEditorFactory, QStyledItemDelegate
 from PyQt4.QtCore import QVariant, QDateTime, QObject
 
-class DTEC(QItemEditorCreatorBase): #QObject, QItemEditorCreatorBase):
+class DateTimeEditorCreator(QItemEditorCreatorBase):
 	"""
 	See gui/itemviews/qitemeditorfactory.cpp for implementations of
 	createEditor() and valuePropertyName()
 	"""
 	def __init__(self):
-		#QObject.__init__(self)
 		QItemEditorCreatorBase.__init__(self)
 
 	def createWidget(self, parent):
-		#pdb.set_trace()
 		wid = QDateTimeEdit(parent)
 		wid.setCalendarPopup(True)
 		wid.setFrame(False)
@@ -75,18 +73,14 @@ class MyError(Exception):
 def table_test():
 	"""
 	Messing around with QTableWidgets
+
+	This successfully creates a table of DateTimes and allows you to edit them.
 	"""
 	
 	tableWidget = QTableWidget(12, 3)
+	tableWidget.setItemDelegate(QStyledItemDelegate())
 	tableWidget.itemDelegate().setItemEditorFactory(QItemEditorFactory())
-	idd = tableWidget.itemDelegate()
-	ief = idd.itemEditorFactory()
-	dtec = DTEC()
-	qvdt = QVariant.DateTime
-	#dtec.destroyed.connect(die)
-	#ief.registerEditor(qvdt, dtec)
-	tableWidget.itemDelegate().itemEditorFactory().registerEditor(QVariant.DateTime, DTEC())
-	#QItemEditorFactory.defaultFactory().registerEditor(QVariant.DateTime, DTEC())
+	tableWidget.itemDelegate().itemEditorFactory().registerEditor(QVariant.DateTime, DateTimeEditorCreator())
 	for row in range(10):
 		for col in range(3):
 			date = QDateTime.currentDateTime()
@@ -98,6 +92,12 @@ def table_test():
 	sys.exit(app.exec_())
 
 if __name__ == "__main__":
-#	main1()
-#	main2()
-	table_test()
+	import sys
+	if "--help" in sys.argv:
+		print("Usage: %s [--table-test | --qt-test]" % sys.argv[0])
+	elif "--table-test" in sys.argv:
+		table_test()
+	elif "--qt-test" in sys.argv:
+		qt_test()
+	else:
+		main()
