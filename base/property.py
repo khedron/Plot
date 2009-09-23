@@ -167,9 +167,6 @@ if __name__ == "__main__":
 	print "length = 2"
 	a.length = 2
 
-# TODO - automate initialisation somehow?
-#      - make signal+property creation a single line?
-
 # These next 2 might be useful.
 # Import a class from a module name and a class name
 def forname(modname, classname):
