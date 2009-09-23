@@ -40,35 +40,6 @@ def qt_test():
 	sys.exit(app.exec_())
 
 
-from PyQt4.QtGui import QTableWidget, QTableWidgetItem, QItemEditorCreatorBase, QDateTimeEdit, QItemEditorFactory, QStyledItemDelegate
-from PyQt4.QtCore import QVariant, QDateTime, QObject
-
-class DateTimeEditorCreator(QItemEditorCreatorBase):
-	"""
-	See gui/itemviews/qitemeditorfactory.cpp for implementations of
-	createEditor() and valuePropertyName()
-	"""
-	def __init__(self):
-		QItemEditorCreatorBase.__init__(self)
-
-	def createWidget(self, parent):
-		wid = QDateTimeEdit(parent)
-		wid.setCalendarPopup(True)
-		wid.setFrame(False)
-		return wid
-
-	def valuePropertyName(self):
-		return "dateTime"
-
-def die():
-	raise MyError("Oops")
-
-class MyError(Exception):
-	def __init__(self, value):
-		self.value = value
-	def __str__(self):
-		return repr(self.value)
-
 
 def table_test():
 	"""
@@ -76,7 +47,36 @@ def table_test():
 
 	This successfully creates a table of DateTimes and allows you to edit them.
 	"""
-	
+
+	from PyQt4.QtGui import QTableWidget, QTableWidgetItem, QItemEditorCreatorBase, QDateTimeEdit, QItemEditorFactory, QStyledItemDelegate
+	from PyQt4.QtCore import QVariant, QDateTime, QObject
+
+	class DateTimeEditorCreator(QItemEditorCreatorBase):
+		"""
+		See gui/itemviews/qitemeditorfactory.cpp for implementations of
+		createEditor() and valuePropertyName()
+		"""
+		def __init__(self):
+			QItemEditorCreatorBase.__init__(self)
+
+		def createWidget(self, parent):
+			wid = QDateTimeEdit(parent)
+			wid.setCalendarPopup(True)
+			wid.setFrame(False)
+			return wid
+
+		def valuePropertyName(self):
+			return "dateTime"
+
+	def die():
+		raise MyError("Oops")
+
+	class MyError(Exception):
+		def __init__(self, value):
+			self.value = value
+		def __str__(self):
+			return repr(self.value)
+
 	tableWidget = QTableWidget(12, 3)
 	tableWidget.setItemDelegate(QStyledItemDelegate())
 	tableWidget.itemDelegate().setItemEditorFactory(QItemEditorFactory())
@@ -91,13 +91,90 @@ def table_test():
 	tableWidget.show()
 	sys.exit(app.exec_())
 
+def interpret():
+	"""
+	Embedding a Python interpreter!
+	"""
+	import sys
+	import code
+	from StringIO import StringIO
+
+	from PyQt4.QtCore import QObject, QString, pyqtSignal
+	from PyQt4.QtGui import QWidget, QGridLayout, QTextEdit, QLineEdit, QLabel
+
+	# TODO: colour text based on stderr/stdout
+	#       print input text alongside output (different colour?)
+	class Interpreter(QObject, code.InteractiveConsole):
+		output = pyqtSignal(QString)
+
+		def __init__(self):
+			QObject.__init__(self)
+			self.l = {}
+			code.InteractiveConsole.__init__(self, self.l)
+			self.out = StringIO()
+
+		def write(self, data):
+			self.output.emit(data)
+
+		def runcode(self, codez):
+			"""
+			Reimplementation to capture stdout and stderr
+			"""
+			sys.stdout = self.out
+			sys.stderr = self.out
+			result = code.InteractiveConsole.runcode(self, codez)
+			sys.stdout = sys.__stdout__
+			sys.stderr = sys.__stderr__
+			self.output.emit(self.out.getvalue())
+			return result
+
+
+	wid = QWidget()
+	layout = QGridLayout(wid)
+
+	display = QTextEdit()
+	display.setReadOnly(True)
+	layout.addWidget(display, 0,0, 1,2)
+
+	prompt = QLabel(">>>")
+	layout.addWidget(prompt, 1,0)
+
+	input = QLineEdit()
+	layout.addWidget(input, 1,1)
+
+	interp = Interpreter()
+
+	def text_input():
+		text = input.text()
+		input.clear()
+
+		if interp.push(str(text)):
+			# More input required
+			# Use sys.ps1 and sys.ps2
+			prompt.setText("...")
+		else:
+			prompt.setText(">>>")
+
+	input.returnPressed.connect(text_input)
+	
+	def text_output(text):
+		display.setPlainText(text)
+		#display.append(text)
+	
+	interp.output.connect(text_output)
+
+	wid.show()
+	sys.exit(app.exec_())
+
 if __name__ == "__main__":
 	import sys
 	if "--help" in sys.argv:
-		print("Usage: %s [--table-test | --qt-test]" % sys.argv[0])
+		print("Usage: %s [ --table-test | --qt-test | --interpret ]" % sys.argv[0])
 	elif "--table-test" in sys.argv:
 		table_test()
 	elif "--qt-test" in sys.argv:
 		qt_test()
+	elif "--interpret" in sys.argv:
+		interpret()
 	else:
 		main()
