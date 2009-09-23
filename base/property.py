@@ -128,12 +128,6 @@ def prop_sig(type, name, default=None, doc=None):
 	return pyqtProperty(type, fget, fset, doc=doc), pyqtSignal(type)
 
 
-def ro_prop(type, name, default=None, fget=None, doc=None):
-	mem = "_" + name
-	if fget is None:
-		fget = get_fget(mem, type, default)
-	return pyqtProperty(type, fget, doc=doc)
-
 def get_property_value(obj, prop_name):
 	return type(obj).__dict__[prop_name].__get__(obj, type(obj))
 

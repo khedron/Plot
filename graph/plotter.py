@@ -4,7 +4,7 @@ from __future__ import division
 from PyQt4.QtGui import QGraphicsScene, QGraphicsTextItem, QGraphicsSimpleTextItem, QTextCursor, QColor, QPen, QTransform, QGraphicsRectItem
 from PyQt4.QtCore import Qt, QObject, pyqtSignal, QString
 
-from base.property import ro_prop, prop_sig
+from base.property import prop_sig
 import config
 
 # Text objects:
