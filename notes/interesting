@@ -1,0 +1,23 @@
+Interesting classes:
+
+collections.namedtuple():
+	Allows access of a tuple field by name.
+	Useful for SQL-type commands:
+		EmployeeRecord = namedtuple('EmployeeRecord', 'name, age, title, department, paygrade')
+
+		import csv
+		for emp in map(EmployeeRecord._make, csv.reader(open("employees.csv", "rb"))):
+			 print(emp.name, emp.title)
+
+		import sqlite3
+		conn = sqlite3.connect('/companydata')
+		cursor = conn.cursor()
+		cursor.execute('SELECT name, age, title, department, paygrade FROM employees')
+		for emp in map(EmployeeRecord._make, cursor.fetchall()):
+			 print(emp.name, emp.title)
+
+itertools:
+	Many iterator versions of builtins like map, filter, slice, zip
+	Also has product(seq1, seq2) which calculates Cartesian product of sequences:
+		useful instead of nested for loops?
+	Also has infinite counters.
