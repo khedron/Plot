@@ -4,8 +4,8 @@ import math
 import itertools
 from sys import float_info
 
-from PyQt4.QtCore import QObject, QVariant
-from PyQt4.QtGui import QDoubleSpinBox
+from PyQt4.QtCore import QObject, QVariant, pyqtSignal
+from PyQt4.QtGui import QDoubleSpinBox, QItemEditorCreatorBase
 
 from base.property import prop_sig
 
@@ -56,7 +56,7 @@ class grid:
 class float_type:
 
 	@staticmethod
-	def variant_to_scalar(data):
+	def variants_to_scalars(data):
 		"""
 		Take a list of QVariants of the given type and transform it to
 		a list of floats.
@@ -64,19 +64,27 @@ class float_type:
 		For example, a date type could give the number of days since
 		1900 for each date. A float type would just extract the float
 		from the QVariant.
-		"""
+
+		>>> a = map(QVariant, map(float, range(20)))
+		>>> float_type.variants_to_scalars(a) #doctest: +ELLIPSIS
+		(0.0, 1.0, 2.0, ..., 17.0, 18.0, 19.0)
+		""" #+NORMALISE_WHITESPACE, - may be needed for doctest
 		# Could return map(QVariant.toDouble, data)
 		# except that toDouble() returns a tuple (result, True)
 		return zip(*map(QVariant.toDouble, data))[0]
 
 	@staticmethod
-	def scalar_to_variant(scalar):
+	def scalars_to_variants(scalar):
 		"""
 		Take a list of floats and transform it to a list of QVariants
 		of that type.
 
-		This is the inverse of variant_to_scalar:
+		This is the inverse of variants_to_scalars:
 			scalar_to_data(data_to_scalar(data)) == data.
+
+		>>> b = float_type.scalars_to_variants(map(float, range(30)))
+		>>> float_type.variants_to_scalars(b) #doctest: +ELLIPSIS
+		(0.0, 1.0, 2.0, 3.0, ..., 27.0, 28.0, 29.0)
 		"""
 		return map(QVariant, scalar)
 
@@ -84,6 +92,9 @@ class float_type:
 	def get_axis():
 		"""
 		Return an axis object of the relevant type.
+
+		>>> float_type.get_axis() #doctest: +ELLIPSIS
+		<graph.type.float_axis object at 0x...>
 		"""
 		return float_axis()
 
@@ -93,6 +104,9 @@ class float_type:
 		Return a subclass of QItemEditorCreatorBase for the type.
 
 		If the default creator should be used, store None.
+
+		>>> float_type.get_editor_creator() #doctest: +ELLIPSIS
+		<graph.type.float_editor_creator object at 0x...>
 		"""
 		return float_editor_creator()
 
@@ -142,7 +156,7 @@ class float_editor_creator(QItemEditorCreatorBase):
 		return "value"
 
 
-class float_axis(axis_base):
+class float_axis(QObject):
 	"""
 	Handles the scales of an axis for a particular data type.
 
@@ -193,13 +207,22 @@ class float_axis(axis_base):
 	length, length_changed = prop_sig(int, 'length')
 	"Length of the axis in grid units (the small squares)"
 
-	scale_auto, scale_auto_changed = prop_sig(bool, "scale_auto")
+	scale_auto, scale_auto_changed = prop_sig(bool, "scale_auto", True)
 	"Automatically calculate scale_start and scale_end"
+
 	# Next two written by _update_scales if scale_auto == True.
 	scale_start, scale_start_changed = prop_sig(QVariant, "scale_start")
-	"Value at start of axis"
+	"""Value at start of axis
+	
+	This can be set if scale_auto is set to False.
+	Otherwise, a changed value will be changed back.
+	"""
 	scale_end, scale_end_changed = prop_sig(QVariant, "scale_end")
-	"Value at end of axis"
+	"""Value at end of axis
+	
+	This can be set if scale_auto is set to False.
+	Otherwise, a changed value will be changed back.
+	"""
 
 	changed = pyqtSignal()
 	"""Emitted when the axis has changed.
@@ -211,7 +234,6 @@ class float_axis(axis_base):
 
 	type = float_type
 	"axis.type should always point back to the type class."
-	editor_creator = 
 
 	def __init__(self):
 		QObject.__init__(self)
@@ -220,6 +242,8 @@ class float_axis(axis_base):
 		self.lines = {}
 
 		# Written by _update_data, read by _update_scales
+		# None indicates no points (or no lines): in combination
+		# with scale_auto == True, this causes an invalid scale.
 		self.max = None
 		self.min = None
 		# Used by _update_scales to detect change
@@ -229,6 +253,8 @@ class float_axis(axis_base):
 		self.calculating_scale = False
 		# Written by _update_scales, read by variant_to_coordinate,
 		# scalar_to_coordinate and tick_info.
+		# None indicates an invalid scale: that scale_auto==True
+		# and we have no points.
 		self.scale = None
 
 		for signal in (self.length_changed, self.scale_auto_changed,
@@ -242,7 +268,7 @@ class float_axis(axis_base):
 		id should be a unique, immutable identifier of the line.
 		I suggest id(line).
 		"""
-		self.lines[id] = map(QVariant.toDouble, data)
+		self.lines[id] = self.__variants_to_floats(data)
 		self._update_data(id)
 
 	def change_line(self, id, data):
@@ -251,7 +277,7 @@ class float_axis(axis_base):
 
 		See add_line for notes.
 		"""
-		self.lines[id] = map(QVariant.toDouble, data)
+		self.lines[id] = self.__variants_to_floats(data)
 		self._update_data(id)
 
 	def remove_line(self, id):
@@ -263,16 +289,47 @@ class float_axis(axis_base):
 		del self.lines[id]
 		self._update_data(id)
 
-	def variant_to_coordinates(self, data):
+	def line_to_coordinates(self, id):
+		"""
+		Take a line id and return a list of axis coordinates.
+
+		The line must have previously been added to the axis.
+		"""
+		return _floats_to_coordinates(self, self.lines[id])
+
+	def variants_to_coordinates(self, data):
 		"""
 		Take a list of QVariants and return a list of axis
 		coordinates.
+
+		If the scales are invalid, then this function returns
+		an empty list.
+
+		Scales are invalid if scale_auto is True (default) and
+		there are no points (either because no lines have been
+		added, or because all the lines have no points).
 		"""
-	def scalar_to_coordinates(self, scalar):
+		# If scales are invalid, this call returns an empty list.
+		return _floats_to_coordinates(self, self.__variants_to_floats(data))
+
+	def scalars_to_coordinates(self, scalar):
 		"""
 		Take a list of scalar floats and return a list of axis
 		coordinates.
+
+		If the scales are invalid, then this function returns
+		an empty list.
+
+		Scales are invalid if scale_auto is True (default) and
+		there are no points (either because no lines have been
+		added, or because all the lines have no points).
 		"""
+		# To be type-correct, instead of scalar, say
+		# self.__variants_to_floats(self.type.scalars_to_variants(scalar))
+
+		# If scales are invalid, this call returns an empty list.
+		return _floats_to_coordinates(self, scalar)
+
 	def tick_info(self):
 		"""
 		Returns an iterator or list of tuples describing each grid unit's
@@ -285,15 +342,31 @@ class float_axis(axis_base):
 		of the value at that point. It should always be filled in;
 		however, I will probably only print the string for major grid
 		units.
+
+		If the scales are invalid, the tick type will always be filled in,
+		but the value string may be an empty string.
 		"""
+		base = 10
+		minor_base = 5
+		for i in range(self.length + 1):
+			if i % base == 0:
+				tick = grid.major
+			elif i % minor_base == 0:
+				tick = grid.minor
+			else:
+				tick = grid.unit
+			# floats = units * floats/unit
+			#        = units * scale
+			# ...and adjust for start
+			string = str(self.__coordinate_to_float(i))
+			yield tick, string
+
+	#### Start private functions
+	# Some parameter checking is to be expected.
 
 	def _update_data(self, id):
-		# Sanity check: if no lines, keep scale as-is until
-		# one is added.
-		if len(self.lines) == 0:
-			return
-		# Sanity check: if there are lines, but none with data
-		# points, then the __update_* functions will store max/min
+		# Sanity check: if no lines, or there are lines, but none with
+		# data points, then the __update_* functions will store max/min
 		# as None.
 
 		oldmax = self.max
@@ -323,23 +396,6 @@ class float_axis(axis_base):
 #		Also need to add max_owner and min_owner to __init__
 #		and _update_*.
 
-	def __update_max(self):
-		# Two-underscore prefix to signify not sanity-checked.
-		max = None
-		for line in self.lines.itervalue():
-			for value in line:
-				if max is None or value > max:
-					max = value
-		self.max = max
-
-	def __update_min(self):
-		min = None
-		for line in self.lines.itervalues():
-			for value in line:
-				if min is None or value < min:
-					min = value
-		self.min = min
-
 	def _update_scale(self):
 
 		base = 10
@@ -348,19 +404,10 @@ class float_axis(axis_base):
 		if self.calculating_scale:
 			return
 
-		# Sanity check: check we have any lines
-		if len(self.lines) == 0:
-			return
-
-		# Sanity check: if there are lines but no data points,
-		# self.max and self.min will be None
-		if self.max is None or self.min is None:
-			return
-
 		# Check if we have to calculate scale_start and scale_end
 		if self.scale_auto:
 			# Sets scale_start, scale_end and scale
-			self.__autocalc_scale(base)
+			self._autocalc_scale(base)
 		else:
 			# Calculate scale from assigned start and end values
 			self.scale = (self.scale_end - self.scale_start) / self.length
@@ -372,7 +419,7 @@ class float_axis(axis_base):
 			self.old_end = self.scale_end
 			self.changed.emit()
 
-	def __autocalc_scale(self, base):
+	def _autocalc_scale(self, base):
 		"""
 		Scaling requirements:
 		- The graph should use round units. By this I mean that a power
@@ -383,6 +430,7 @@ class float_axis(axis_base):
 				in the top half of the axis.
 
 		Solution:
+		start with power of 10 below range/axis_length
 		for increasing powers of 10:
 			for multiplier = 1, 2, 2.5, 4, 5:
 				axis start is min rounded down to
@@ -413,14 +461,46 @@ class float_axis(axis_base):
 		for decreasing powers of 10:
 			for multiplier = 5, 2, 1:
 		"""
-		# Start with same magnitude as the range.
+		__import__("pdb").set_trace()
+		# Sanity checks
+
+		# Check we have any lines.
+		# Set scale to None to imply an invalid scale.
+		if len(self.lines) == 0:
+			self.scale = None
+			return
+
+		# If there are lines but no data points,
+		# self.max and self.min will be None.
+		if self.max is None:
+			self.scale = None
+			return
+
+		# If axis length is unset, we can't calculate scales.
+		if self.length < 1:
+			self.scale = None
+			return
+
+		# We're gonna have problems if we only have one point!
+		# We could return an invalid scale, but we can
+		# work out start and fudge scale instead.
+		if self.max == self.min:
+			# Set one of them to 0 or, failing that, 1.
+			if self.min == 0:
+				self.max = 1
+			elif self.min > 0:
+				self.min = 0
+			else:
+				self.max = 0
+
+		# Start with power of 10 below range/length
 		range = self.max - self.min
-		power = math.floor(math.log(range, base))
-		magnitude = base ** power
+		unit_range = range/self.length
+		magnitude = base ** math.floor(math.log(unit_range, base))
 
-		multipliers = self.__get_scale_multipliers(base))
+		multipliers = self.__get_scale_multipliers(base)
 
-		# Heh heh
+		# Heh heh pun
 		ever = itertools.count()
 		for ever in ever:
 			for multiplier in multipliers:
@@ -432,12 +512,38 @@ class float_axis(axis_base):
 				# See if scale contains the largest value
 				if end > self.max:
 					# Write scale_start, scale_end and scale
-					self.scale_start = start
-					self.scale_end = end
+					self.scale_start = QVariant(start)
+					self.scale_end = QVariant(end)
 					self.scale = unit_scale
 					return
 			# Increase magnitude
 			magnitude = magnitude * base
+
+	def _floats_to_coordinates(self, floats):
+		"""Returns a list, not an iterator."""
+		# If scale is invalid, return an empty list
+		if self.scale is None:
+			return []
+		return [self.__float_to_coordinate(x) for x in floats]
+
+	##### Start private, unchecked functions.
+	# We assume that the parameters are correct.
+
+	def __update_max(self):
+		max = None
+		for line in self.lines.itervalues():
+			for value in line:
+				if max is None or value > max:
+					max = value
+		self.max = max
+
+	def __update_min(self):
+		min = None
+		for line in self.lines.itervalues():
+			for value in line:
+				if min is None or value < min:
+					min = value
+		self.min = min
 
 	def __get_scale_start(self, unit_scale, base):
 		# Round self.min down to the nearest multiple of major_scale.
@@ -483,3 +589,19 @@ class float_axis(axis_base):
 		for factor in big_factors:
 			yield factor
 
+	def __variants_to_floats(self, variants):
+		# Due to definition of scalar for float type
+		return self.type.variants_to_scalars(variants)
+
+	def __coordinate_to_float(self, coord):
+		# floats = units * floats/unit + start
+		#        = units * scale       + start
+		return self.scale_start + (coord * self.scale)
+
+	def __float_to_coordinate(self, value):
+		# Inverse of __cooordinate_to_float
+		return (value - self.scale_start) / self.scale
+
+if __name__ == "__main__":
+	import doctest
+	doctest.testmod()
