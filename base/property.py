@@ -1,4 +1,6 @@
-from PyQt4.QtCore import pyqtSignal, pyqtProperty, QObject
+from exceptions import Exception
+
+from PyQt4.QtCore import pyqtSignal, pyqtProperty, QObject, QString
 
 """
 pyqtSignal and pyqtProperty convenience functions.
@@ -101,6 +103,9 @@ def get_fset(mem, type, sig):
 		self.__getattribute__(sig).emit(self.__getattribute__(mem))
 	return fset
 
+class PropertyException(Exception):
+	pass
+
 def prop_sig(type, name, default=None, doc=None):
 	"""
 	Creates a pyqtProperty/pyqtSignal pair from the given name and type.
@@ -123,6 +128,12 @@ def prop_sig(type, name, default=None, doc=None):
 #	"""
 	sig = name + "_changed"
 	mem = "_" + name
+	# Make sure that the type passed in was a python class, not
+	# a C++ type-string.
+	if (isinstance(type, basestring) or isinstance(type, QString)
+			) and default is None:
+		raise PropertyException, "must give a default when type is a C++ type-string"
+
 	fget = get_fget(mem, type, sig, default)
 	fset = get_fset(mem, type, sig)
 	return pyqtProperty(type, fget, fset, doc=doc), pyqtSignal(type)
