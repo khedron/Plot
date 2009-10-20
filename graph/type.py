@@ -69,9 +69,7 @@ class float_type:
 		>>> float_type.variants_to_scalars(a) #doctest: +ELLIPSIS
 		(0.0, 1.0, 2.0, ..., 17.0, 18.0, 19.0)
 		""" #+NORMALISE_WHITESPACE, - may be needed for doctest
-		# Could return map(QVariant.toDouble, data)
-		# except that toDouble() returns a tuple (result, True)
-		return zip(*map(QVariant.toDouble, data))[0]
+		return map(float_type._variant_to_scalar, data)
 
 	@staticmethod
 	def scalars_to_variants(scalar):
@@ -86,7 +84,8 @@ class float_type:
 		>>> float_type.variants_to_scalars(b) #doctest: +ELLIPSIS
 		(0.0, 1.0, 2.0, 3.0, ..., 27.0, 28.0, 29.0)
 		"""
-		return map(QVariant, scalar)
+		# Construct the QVariants from guaranteed floats
+		return map(QVariant, map(float, scalar))
 
 	@staticmethod
 	def get_axis():
@@ -109,6 +108,14 @@ class float_type:
 		<graph.type.float_editor_creator object at 0x...>
 		"""
 		return float_editor_creator()
+
+	@staticmethod
+	def _variant_to_scalar(data):
+		result, valid = QVariant.toDouble(data)
+		if not valid:
+			raise TypeError, "float_type.variant_to_scalar: QVariant expected"
+		else:
+			return result
 
 type[QVariant.Double] = float_type
 
@@ -174,6 +181,28 @@ class float_axis(QObject):
 		- no lines
 		- lines with no data points
 			- corollary: lines, but no points in any
+	
+	>>> data = float_type.scalars_to_variants(map(float, range(20)))
+	>>> axis = float_type.get_axis()
+	>>> axis.scale_start.toDouble() # Scales are invalid as length == 0
+	(0.0, False)
+	>>> axis.scale_end.toDouble()
+	(0.0, False)
+	>>> axis.add_line(id(data), data)
+	>>> axis.scale_start.toDouble() # Check scales are still invalid
+	(0.0, False)
+	>>> axis.scale_end.toDouble()
+	(0.0, False)
+	>>> axis.length = 20
+	>>> axis.scale_start.toDouble() # Check scales are appropriate to length
+	(0.0, True)
+	>>> axis.scale_end.toDouble()
+	(20.0, True)
+	>>> axis.length = 120
+	>>> axis.scale_start.toDouble()
+	(0.0, True)
+	>>> axis.scale_end.toDouble()
+	(24.0, True)
 	"""
 
 	"""
@@ -461,7 +490,6 @@ class float_axis(QObject):
 		for decreasing powers of 10:
 			for multiplier = 5, 2, 1:
 		"""
-		__import__("pdb").set_trace()
 		# Sanity checks
 
 		# Check we have any lines.
