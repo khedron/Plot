@@ -15,7 +15,7 @@ They are intended to be used like so:
 		name, name_changed = prop_sig(str, "name", "Joe Bloggs")
 		# age defaults to int(), i.e. 0
 		age, age_changed = prop_sig(int, "age")
-		<var>, <var>_changed = prop_sig(<type>, <var-as-string>,[<default>])
+		# <var>, <var>_changed = prop_sig(<type>, <var-as-string>,[<default>])
 
 		def __init__(self):
 			QObject.__init__(self)
