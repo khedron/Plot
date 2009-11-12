@@ -1,0 +1,5 @@
+I have the graph->plotter->QGraphicsScene pipeline ready.
+
+Currently, titles work, and graph dimensions seem well defined.
+
+Now working on lines in graph.line and graph.type.

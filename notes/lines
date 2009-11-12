@@ -1,0 +1,9 @@
+I'm trying to make the model in this program jive as closely with
+the database/spreadsheet model as possible.
+
+Data is grouped in columns. Each column has a title and a type.
+Lines are made up of two columns.
+The length of the shortest column is the length of the line.
+
+(Ideally, each column should be added to simultaneously, like
+a relational table.)
