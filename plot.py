@@ -9,13 +9,13 @@ from PyQt4.QtCore import Qt
 
 import config
 
-from graph.plotter import Plotter
+# from graph.plotter import Plotter
 from graph.graph import Graph
 
 # More imports below
 
-config.debug.plotter.show_margin_boxes = True
-config.debug.plotter.show_text_boxes = True
+config.debug.plotter.show_margin_boxes = False
+config.debug.plotter.show_text_boxes = False
 
 app = QApplication(sys.argv)
 
