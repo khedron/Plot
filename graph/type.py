@@ -38,7 +38,10 @@ methods take a list, and do not allow a single value to be passed;
 just do method([value])[0] for single values.
 """
 
-type = {}
+class Type:
+	pass
+
+types = {}
 """
 QVariant.Type: Type class map
 """
@@ -53,7 +56,7 @@ class grid:
 
 #===== Begin float Type classes
 
-class float_type:
+class float_type(Type):
 
 	@staticmethod
 	def variants_to_scalars(data):
@@ -117,7 +120,7 @@ class float_type:
 		else:
 			return result
 
-type[QVariant.Double] = float_type
+types[QVariant.Double] = float_type
 
 
 class float_editor_creator(QItemEditorCreatorBase):
