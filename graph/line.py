@@ -1,13 +1,25 @@
-from PyQt4.QtCore import QObject, pyqtSignal
+from PyQt4.QtCore import QObject, pyqtSignal, QVariant
 
 from base.property import prop_sig
 from style.style import LineStyle
+from graph.type import Type
 
-class Series(QObject):
-	def __init__(self, type, data):
+class Column(QObject):
+	name, name_changed = prop_sig(str, "name")
+	type, type_changed = prop_sig(QVariant.Type, "type")
+	data, data_changed = prop_sig(list, "data")
+
+	changed = pyqtSignal()
+
+	def __init__(self, name, type, data):
 		object.__init__(self)
+		self.name = name
 		self.type = type
 		self.data = data
+
+		for signal in (self.name_changed,
+				self.type_changed, self.data_changed):
+			signal.connect(self.changed)
 
 class Line(QObject):
 
@@ -19,27 +31,27 @@ class Line(QObject):
 	point_style, point_style_changed = prop_sig(str, "point_style", point_styles[0])
 	point_size, point_size_changed = prop_sig(float, "point_size", 1)
 
-	data_changed = pyqtSignal()
 	x_data_changed = pyqtSignal(int, "QList<QVariant>")
-	"""x_data_changed(int id, QVariant-list data)"""
 	y_data_changed = pyqtSignal(int, "QList<QVariant>")
-	"""y_data_changed(int id, QVariant-list data)"""
 
-	def __init__(self, type_x, data_x, type_y, data_y):
+	def __init__(self, column_x, column_y):
 		QObject.__init__(self)
-		self.x = Series(type_x, data_x)
-		self.y = Series(type_y, data_y)
+
+		self.x = column_x
+		self.x.changed.connect(self.emit_x)
+
+		self.y = column_y
+		self.y.changed.connect(self.emit_y)
 
 		for signal in (self.style_changed, self.point_style_changed,
-				self.point_size_changed, self.data_changed):
+				self.point_size_changed, self.x.changed, self.y.changed):
 			signal.connect(self.changed)
+	
+	def emit_x(self):
+		self.x_data_changed.emit(id(self), self.x.data)
 
-	def set_data(self, x_data, y_data):
-		self.x.data = x_data
-		self.y.data = y_data
-		self.x_data_changed.emit(id(self), x_data)
-		self.y_data_changed.emit(id(self), y_data)
-		self.data_changed.emit()
+	def emit_y(self):
+		self.y_data_changed.emit(id(self), self.y.data)
 
 # Data change signalling possibilities:
 #		- line has data_changed(QVariantList)
