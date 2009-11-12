@@ -7,3 +7,6 @@ The length of the shortest column is the length of the line.
 
 (Ideally, each column should be added to simultaneously, like
 a relational table.)
+
+Data is changed in the individual columns, not by the line directly.
+
